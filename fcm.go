@@ -185,6 +185,7 @@ func (this *FcmClient) sendOnce() (*FcmResponseStatus, error) {
 	fcmRespStatus.RetryAfter = response.Header.Get(retry_after_header)
 
 	if response.StatusCode != 200 {
+		fcmRespStatus.Err = string(body)
 		return fcmRespStatus, nil
 	}
 
