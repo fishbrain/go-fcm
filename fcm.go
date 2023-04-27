@@ -79,6 +79,7 @@ type NotificationPayload struct {
 	Icon             string `json:"icon,omitempty"`
 	Sound            string `json:"sound,omitempty"`
 	Badge            string `json:"badge,omitempty"`
+	Image            string `json:"image,omitempty"`
 	Tag              string `json:"tag,omitempty"`
 	Color            string `json:"color,omitempty"`
 	ClickAction      string `json:"click_action,omitempty"`
