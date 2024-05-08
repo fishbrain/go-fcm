@@ -12,6 +12,7 @@ import (
 const (
 	// fcm_server_url fcm server url
 	fcm_server_url = "https://fcm.googleapis.com/fcm/send"
+
 	// MAX_TTL the default ttl for a notification
 	MAX_TTL = 2419200
 	// Priority_HIGH notification priority
@@ -363,7 +364,7 @@ func (this *FcmResponseStatus) IsTimeout() bool {
 	return false
 }
 
-// GetRetryAfterTime converts the retrey after response header
+// GetRetryAfterTime converts the retry after response header
 // to a time.Duration
 func (this *FcmResponseStatus) GetRetryAfterTime() (t time.Duration, e error) {
 	t, e = time.ParseDuration(this.RetryAfter)
