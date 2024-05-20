@@ -14,7 +14,7 @@ This library uses HTTP/JSON Firebase Cloud Messaging connection server protocol
 * Send messages to a device list
 * Message can be a notification or data payload
 * Supports condition attribute (fcm only)
-* Instace Id Features
+* Instance Id Features
 	- Get info about app Instance
 	- Subscribe app Instance to a topic
 	- Batch Subscribe/Unsubscribe to/from a topic
