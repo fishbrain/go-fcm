@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+	logging "github.com/fishbrain/logging-go"
+
 )
 
 const (
@@ -202,9 +204,20 @@ func (this *FcmClient) sendOnce() (*FcmResponseStatus, error) {
 
 // Send to fcm
 func (this *FcmClient) Send() (*FcmResponseStatus, error) {
+	if this.Message.DryRun {
+		logging.Log.Info("Dry run mode enabled")
+
+		awsCredentials, err := getTemporaryAWSCredentials()
+		if err != nil {
+			logging.Log.Error("Failed to get temporary AWS credentials: %v", err)	
+		}
+		logging.Log.Info("AWS credentials: %v", awsCredentials)
+
+	}
 	return this.sendOnce()
 
 }
+
 
 // toJsonByte converts FcmMsg to a json byte
 func (this *FcmMsg) toJsonByte() ([]byte, error) {
