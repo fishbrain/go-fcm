@@ -14,7 +14,18 @@ func TestGenTopicUrl(t *testing.T) {
 }
 
 func TestGenInfoResult1(t *testing.T) {
-	result1 := `{"applicationVersion":"1","connectDate":"2016-07-02","attestStatus":"NOT_ROOTED","application":"com.comp.company","scope":"*","authorizedEntity":"1234567891234","rel":{"topics":{"global":{"addDate":"2016-07-02"}}},"connectionType":"WIFI","appSigner":"c822c1b63853ed273b89687ac505f9faabcdefgh","platform":"ANDROID"}`
+	result1 := `{
+		"applicationVersion":"1",
+		"connectDate":"2016-07-02",
+		"attestStatus":"NOT_ROOTED",
+		"application":"com.comp.company",
+		"scope":"*",
+		"authorizedEntity":"1234567891234",
+		"rel": { "topics": { "global": { "addDate":"2016-07-02" } } },
+		"connectionType":"WIFI",
+		"appSigner":"c822c1b63853ed273b89687ac505f9faabcdefgh",
+		"platform":"ANDROID"
+	}`
 
 	resp, err := parseGetInfo([]byte(result1))
 	if err != nil {
@@ -29,23 +40,17 @@ func TestGenInfoResult1(t *testing.T) {
 
 func TestGenInfoResult2(t *testing.T) {
 	result2 := `{
-	"applicationVersion":"1",
-	"connectDate":"2016-07-02",
-	"attestStatus":"NOT_ROOTED",
-	"application":"com.comp.company",
-	"scope":"*",
-	"authorizedEntity":"1234567891234",
-	"rel":
-	{
-		"topics":
-		{
-			"global":{ "addDate":"2016-07-02" }
-		}
-	},
-	"connectionType":"WIFI",
-	"appSigner":"c822c1b63853ed273b89687ac505f9faabcdefgh",
-	"platform":"ANDROID"
-  }`
+		"applicationVersion":"1",
+		"connectDate":"2016-07-02",
+		"attestStatus":"NOT_ROOTED",
+		"application":"com.comp.company",
+		"scope":"*",
+		"authorizedEntity":"1234567891234",
+		"rel": { "topics": { "global":{ "addDate":"2016-07-02" } } },
+		"connectionType":"WIFI",
+		"appSigner":"c822c1b63853ed273b89687ac505f9faabcdefgh",
+		"platform":"ANDROID"
+	}`
 
 	resp, err := parseGetInfo([]byte(result2))
 	if err != nil {
@@ -54,7 +59,6 @@ func TestGenInfoResult2(t *testing.T) {
 	if resp == nil {
 		t.Error("Parsing Error: Response is nil")
 	}
-
 }
 
 func TestGenInfoResult3(t *testing.T) {
@@ -126,5 +130,4 @@ func TestExtractTopicName(t *testing.T) {
 	if expected != extractTopicName(topic) {
 		t.Error("Extracting topic name faild")
 	}
-
 }

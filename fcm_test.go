@@ -1,14 +1,16 @@
 package fcm
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	firebase "firebase.google.com/go/v4"
 )
 
 func TestTopicHandle_1(t *testing.T) {
-
 	srv := httptest.NewServer(http.HandlerFunc(topicHandle))
 	chgUrl(srv)
 	defer srv.Close()
@@ -32,7 +34,6 @@ func TestTopicHandle_1(t *testing.T) {
 }
 
 func TestImage(t *testing.T) {
-
 	srv := httptest.NewServer(http.HandlerFunc(topicHandle))
 	chgUrl(srv)
 	defer srv.Close()
@@ -56,7 +57,6 @@ func TestImage(t *testing.T) {
 }
 
 func TestTopicHandle_2(t *testing.T) {
-
 	srv := httptest.NewServer(http.HandlerFunc(topicHandle))
 	chgUrl(srv)
 	defer srv.Close()
@@ -80,7 +80,6 @@ func TestTopicHandle_2(t *testing.T) {
 }
 
 func TestTopicHandle_3(t *testing.T) {
-
 	srv := httptest.NewServer(http.HandlerFunc(topicHandle))
 	chgUrl(srv)
 	defer srv.Close()
@@ -109,7 +108,6 @@ func TestTopicHandle_3(t *testing.T) {
 }
 
 func TestRegIdHandle_1(t *testing.T) {
-
 	srv := httptest.NewServer(http.HandlerFunc(regIdHandle))
 	chgUrl(srv)
 	defer srv.Close()
@@ -143,7 +141,6 @@ func TestRegIdHandle_1(t *testing.T) {
 }
 
 func TestRegIdHandle_2(t *testing.T) {
-
 	srv := httptest.NewServer(http.HandlerFunc(regIdHandle))
 	chgUrl(srv)
 	defer srv.Close()
@@ -197,4 +194,44 @@ func regIdHandle(w http.ResponseWriter, r *http.Request) {
 	result := `{"multicast_id":1003859738309903334,"success":2,"failure":1,"canonical_ids":0,"results":[{"message_id":"0:1448128667408487%ecaaa23db3fd7efd"},{"message_id":"0:1468135657607438%ecafacddf9ff8ead"},{"error":"InvalidRegistration"}]}`
 	fmt.Fprintln(w, result)
 
+}
+
+func TestSendFirebase(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(regIdHandle))
+	chgUrl(srv)
+	defer srv.Close()
+
+	c := NewFcmClient("key")
+
+	data := map[string]string{
+		"msg": "Hello World",
+		"sum": "Happy Day",
+	}
+
+	ids := []string{
+		"token0",
+	}
+
+	xds := []string{
+		"token1",
+		"token2",
+	}
+
+	c.newDevicesList(ids)
+
+	c.SetMsgData(data)
+
+	c.AppendDevices(xds)
+
+	res, err := c.Send()
+	if err != nil {
+		t.Error("Response Error : ", err)
+	}
+	if res == nil {
+		t.Error("Res is nil")
+	}
+
+	if res.Success != 2 || res.Fail != 1 {
+		t.Error("Parsing Success or Fail error")
+	}
 }

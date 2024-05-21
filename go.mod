@@ -7,8 +7,11 @@ go 1.21.4
 require (
 	firebase.google.com/go/v4 v4.14.0
 	github.com/fishbrain/logging-go v0.1.10
+<<<<<<< HEAD
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/api v0.181.0
+=======
+>>>>>>> a65a588 (Implements new fcm api call)
 )
 
 require github.com/stretchr/objx v0.5.2 // indirect
@@ -32,7 +35,12 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.4 // indirect
+<<<<<<< HEAD
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+=======
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
+>>>>>>> a65a588 (Implements new fcm api call)
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.51.0 // indirect
@@ -71,5 +79,6 @@ require (
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/tinylib/msgp v1.1.1 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
+	google.golang.org/api v0.181.0 // indirect
 	gopkg.in/DataDog/dd-trace-go.v1 v1.23.1 // indirect
 )
