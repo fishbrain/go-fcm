@@ -1,20 +1,18 @@
 package fcm
 
 import (
-
 	logging "github.com/fishbrain/logging-go"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-
 )
 
 // Function to get temporary AWS credentials
 func getTemporaryAWSCredentials() (*sts.Credentials, error) {
 	// Create a new session with AWS
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-east-1"), // Replace with your region
+		Region: aws.String("eu-west-1"),
 	})
 	if err != nil {
 		return nil, err
