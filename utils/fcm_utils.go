@@ -38,7 +38,9 @@ func AuthorizeAndGetFirebaseMessagingClient() (*messaging.Client, error) {
 
 	opts := []option.ClientOption{option.WithCredentialsJSON(gcpCredentials)}
 
-	firebaseApp, err := firebaseNewApp(context.Background(), nil, opts...)
+	projectId := config.Config.GcpProdProjectId
+	logging.Log.Infof("Initializing firebase app with project ID: %s", projectId)
+	firebaseApp, err := firebaseNewApp(context.Background(), &firebase.Config{ProjectID: projectId}, opts...)
 
 	if err != nil {
 		logging.Log.Infof("Error initializing firebase app: %s", err)
@@ -51,6 +53,7 @@ func AuthorizeAndGetFirebaseMessagingClient() (*messaging.Client, error) {
 		logging.Log.Infof("Error initializing FCM client: %s", err)
 		return nil, err
 	}
+	logging.Log.Infof("FCM Client: %v", fcmClient)
 
 	return fcmClient, err
 }

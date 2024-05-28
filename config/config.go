@@ -15,10 +15,11 @@ var VERSION string
 
 // config represents the configuration of Bonito read from environment
 type config struct {
-	Environment   string `envconfig:"BONITO_ENV" default:"development"`
-	LogLevel      string `envconfig:"LOG_LEVEL" default:"INFO"`
-	LogGorp       bool   `envconfig:"LOG_GORP" default:"false"`
-	BugsnagAPIKey string `envconfig:"BUGSNAG_API_KEY"`
+	Environment   		string `envconfig:"BONITO_ENV" default:"development"`
+	LogLevel      		string `envconfig:"LOG_LEVEL" default:"INFO"`
+	LogGorp       		bool   `envconfig:"LOG_GORP" default:"false"`
+	BugsnagAPIKey 		string `envconfig:"BUGSNAG_API_KEY"`
+	GcpProdProjectId 	string `envconfig:"GCP_PROD_PROJECT_ID" default:""`
 }
 
 // GetEnv reads configuration from environment

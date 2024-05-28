@@ -23,6 +23,7 @@ type MockFile struct {
 type MockFirebaseApp struct {
 	mock.Mock
 }
+
 func TestMain(m *testing.M) {
 	logging.Init(config.LoggingConfig)
 	os.Exit(m.Run())
