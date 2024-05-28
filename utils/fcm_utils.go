@@ -7,7 +7,6 @@ import (
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/messaging"
-	"github.com/fishbrain/go-fcm/config"
 	logging "github.com/fishbrain/logging-go"
 	"google.golang.org/api/option"
 )
@@ -18,7 +17,9 @@ var firebaseNewApp = firebase.NewApp
 
 func AuthorizeAndGetFirebaseMessagingClient() (*messaging.Client, error) {
 	
-	fileName := "workload_identity_pool_credentials_" + config.Config.Environment + ".json"
+	environment := os.Getenv("BONITO_ENV")
+
+	fileName := "workload_identity_pool_credentials_" + environment + ".json"
 
 	logging.Log.Infof("Opening file: %s", fileName)
 	
@@ -38,7 +39,7 @@ func AuthorizeAndGetFirebaseMessagingClient() (*messaging.Client, error) {
 
 	opts := []option.ClientOption{option.WithCredentialsJSON(gcpCredentials)}
 
-	projectId := config.Config.GcpProdProjectId
+	projectId := os.Getenv("GCP_PROD_PROJECT_ID")
 	logging.Log.Infof("Initializing firebase app with project ID: %s", projectId)
 	firebaseApp, err := firebaseNewApp(context.Background(), &firebase.Config{ProjectID: projectId}, opts...)
 
