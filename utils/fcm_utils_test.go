@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	firebase "firebase.google.com/go/v4"
-	"github.com/fishbrain/go-fcm/config"
 	logging "github.com/fishbrain/logging-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -25,7 +24,7 @@ type MockFirebaseApp struct {
 }
 
 func TestMain(m *testing.M) {
-	logging.Init(config.LoggingConfig)
+	logging.Init(logging.LoggingConfig{})
 	os.Exit(m.Run())
 }
 
