@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"testing"
 
@@ -28,46 +27,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestAuthorizeAndGetFirebaseMessagingClient_ErrorOpeningFile(t *testing.T) {
-	// Mock os.Open to return an error
-	osOpen = func(name string) (*os.File, error) {
-		return nil, fmt.Errorf("error opening file")
-	}
-	defer func() { osOpen = os.Open }()
-
-	_, err := AuthorizeAndGetFirebaseMessagingClient()
-	assert.Error(t, err)
-}
-
-func TestAuthorizeAndGetFirebaseMessagingClient_ErrorReadingFile(t *testing.T) {
-	// Mock os.Open to return a file
-	osOpen = func(name string) (*os.File, error) {
-		return &os.File{}, nil
-	}
-	defer func() { osOpen = os.Open }()
-
-	// Mock io.ReadAll to return an error
-	ioReadAll = func(r io.Reader) ([]byte, error) {
-		return nil, fmt.Errorf("error reading file")
-	}
-	defer func() { ioReadAll = io.ReadAll }()
-
-	_, err := AuthorizeAndGetFirebaseMessagingClient()
-	assert.Error(t, err)
-}
-
 func TestAuthorizeAndGetFirebaseMessagingClient_ErrorInitializingFirebaseApp(t *testing.T) {
-	// Mock os.Open to return a file
-	osOpen = func(name string) (*os.File, error) {
-		return &os.File{}, nil
-	}
-	defer func() { osOpen = os.Open }()
-
-	// Mock io.ReadAll to return some credentials
-	ioReadAll = func(r io.Reader) ([]byte, error) {
-		return []byte("mocked credentials"), nil
-	}
-	defer func() { ioReadAll = io.ReadAll }()
 
 	// Mock firebase.NewApp to return an error
 	firebaseNewApp = func(ctx context.Context, config *firebase.Config, opts ...option.ClientOption) (*firebase.App, error) {
@@ -80,20 +40,7 @@ func TestAuthorizeAndGetFirebaseMessagingClient_ErrorInitializingFirebaseApp(t *
 }
 
 func TestAuthorizeAndGetFirebaseMessagingClient_ErrorInitializingFCMClient(t *testing.T) {
-	// Mock os.Open to return a file
-	osOpen = func(name string) (*os.File, error) {
-		mockFile := new(MockFile)
-		mockFile.On("Close").Return(nil)
-		return &os.File{}, nil
-	}
-	defer func() { osOpen = os.Open }()
-
-	// Mock io.ReadAll to return some credentials
-	ioReadAll = func(r io.Reader) ([]byte, error) {
-		return []byte("mocked credentials"), nil
-	}
-	defer func() { ioReadAll = io.ReadAll }()
-
+	
 	// Mock firebase.NewApp to return a mocked firebase app
 	firebaseNewApp = func(ctx context.Context, config *firebase.Config, opts ...option.ClientOption) (*firebase.App, error) {
 		mockFirebaseApp := new(MockFirebaseApp)

@@ -2,9 +2,8 @@ package utils
 
 import (
 	"context"
-	"io"
+	_ "embed"
 	"os"
-	"path/filepath"
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/messaging"
@@ -12,44 +11,25 @@ import (
 	"google.golang.org/api/option"
 )
 
-var osOpen = os.Open
-var ioReadAll = io.ReadAll
 var firebaseNewApp = firebase.NewApp
+
+//go:embed workload_identity_pool_credentials_staging.json
+var gcpCredentialsStaging []byte
+
+//go:embed workload_identity_pool_credentials_production.json
+var gcpCredentialsProduction []byte
 
 func AuthorizeAndGetFirebaseMessagingClient() (*messaging.Client, error) {
 	
 	environment := os.Getenv("BONITO_ENV")
-
-	fileName := "workload_identity_pool_credentials_" + environment + ".json"
-
-	workingDir, _ := os.Getwd()
-	logging.Log.Infof("Current working directory: %s", workingDir)
-
-	relativePath := "../data/gcp/" + fileName
-	absolutePath, err := filepath.Abs(relativePath)
 	
-	if err != nil {
-		logging.Log.Errorf("Error getting absolute path: %s", err)
-		return nil, err
+	var gcpCredentials []byte
+
+	if environment == "staging" {
+		gcpCredentials = gcpCredentialsStaging
+	} else if environment == "production" {
+		gcpCredentials = gcpCredentialsProduction
 	}
-
-	logging.Log.Infof("Opening file: %s", absolutePath)
-	
-	file, err := osOpen(absolutePath)
-
-	if err != nil {
-		logging.Log.Errorf("Error opening file: %s", err)
-		return nil, err
-	}
-	defer file.Close()
-
-	gcpCredentials, err := ioReadAll(file)
-
-	if err != nil {
-		logging.Log.Errorf("Error reading file: %s", err)
-		return nil, err
-	}
-	logging.Log.Infof("GCP credentials: %v", gcpCredentials)
 
 	opts := []option.ClientOption{option.WithCredentialsJSON(gcpCredentials)}
 
@@ -58,14 +38,14 @@ func AuthorizeAndGetFirebaseMessagingClient() (*messaging.Client, error) {
 	firebaseApp, err := firebaseNewApp(context.Background(), &firebase.Config{ProjectID: projectId}, opts...)
 
 	if err != nil {
-		logging.Log.Infof("Error initializing firebase app: %s", err)
+		logging.Log.Errorf("Error initializing firebase app: %s", err)
 		return nil, err
 	}
 	logging.Log.Infof("App: %s", firebaseApp)
 
 	fcmClient, err := firebaseApp.Messaging(context.Background())
 	if err != nil {
-		logging.Log.Infof("Error initializing FCM client: %s", err)
+		logging.Log.Errorf("Error initializing FCM client: %s", err)
 		return nil, err
 	}
 	logging.Log.Infof("FCM Client: %v", fcmClient)
