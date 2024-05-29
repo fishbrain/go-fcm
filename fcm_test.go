@@ -2,13 +2,25 @@ package fcm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	firebase "firebase.google.com/go/v4"
+	messaging "firebase.google.com/go/v4/messaging"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
+
+type fcmMock struct {
+	mock.Mock
+}
+
+func (m *fcmMock) SendEachForMulticast(ctx context.Context, mm *messaging.MulticastMessage) (*messaging.BatchResponse, error) {
+	args := m.Called(ctx, mm)
+	return args.Get(0).(*messaging.BatchResponse), args.Error(1)
+}
 
 func TestTopicHandle_1(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(topicHandle))
@@ -234,4 +246,203 @@ func TestSendFirebase(t *testing.T) {
 	if res.Success != 2 || res.Fail != 1 {
 		t.Error("Parsing Success or Fail error")
 	}
+}
+
+func TestSendOnceFirebaseAdminGo_SuccessResponse(t *testing.T) {
+	c := NewFcmClient("key")
+
+	notificationPayload := NotificationPayload{
+		Title: "title - foo",
+		Body:  "body - bar",
+		Image: "https://example.com/img.jpg",
+	}
+	c.SetNotificationPayload(&notificationPayload)
+
+	messagingClientMock := new(fcmMock)
+	mockCall := messagingClientMock.On("SendEachForMulticast", mock.Anything, mock.Anything).Return(
+		&messaging.BatchResponse{
+			SuccessCount: 1,
+			FailureCount: 0,
+			Responses: []*messaging.SendResponse{
+				{
+					Success:   true,
+					MessageID: "123",
+					Error:     nil,
+				},
+			},
+		},
+		nil,
+	)
+
+	fcmRespStatus, err := c.sendOnceFirebaseAdminGo(messagingClientMock)
+
+	messagingClientMock.AssertExpectations(t)
+	mockCall.Unset()
+
+	require.Nil(t, err)
+	require.Equal(t, &FcmResponseStatus{
+		Ok:            true,
+		StatusCode:    http.StatusOK,
+		MulticastId:   0,
+		Success:       1,
+		Fail:          0,
+		Canonical_ids: 0,
+		Results: []map[string]string{
+			{
+				"MessageID": "123",
+				"Success":   "true",
+			},
+		},
+		MsgId: 0,
+	}, fcmRespStatus)
+}
+
+func TestSendOnceFirebaseAdminGo_BadResponse(t *testing.T) {
+	c := NewFcmClient("key")
+
+	notificationPayload := NotificationPayload{
+		Title: "title - foo",
+		Body:  "body - bar",
+		Image: "https://example.com/img.jpg",
+	}
+	c.SetNotificationPayload(&notificationPayload)
+
+	messagingClientMock := new(fcmMock)
+	mockCall := messagingClientMock.On("SendEachForMulticast", mock.Anything, mock.Anything).Return(
+		&messaging.BatchResponse{
+			SuccessCount: 0,
+			FailureCount: 1,
+			Responses: []*messaging.SendResponse{
+				{
+					Success:   false,
+					MessageID: "123",
+					Error:     errors.New("something went wrong"),
+				},
+			},
+		},
+		nil,
+	)
+
+	fcmRespStatus, err := c.sendOnceFirebaseAdminGo(messagingClientMock)
+
+	messagingClientMock.AssertExpectations(t)
+	mockCall.Unset()
+
+	require.Nil(t, err)
+	require.Equal(t, &FcmResponseStatus{
+		Ok:            false,
+		StatusCode:    http.StatusInternalServerError,
+		MulticastId:   0,
+		Success:       0,
+		Fail:          1,
+		Canonical_ids: 0,
+		Results: []map[string]string{
+			{
+				"MessageID": "123",
+				"Success":   "false",
+				"Error":     "something went wrong",
+			},
+		},
+		MsgId: 0,
+	}, fcmRespStatus)
+}
+
+func TestSendOnceFirebaseAdminGo_MixedResponse(t *testing.T) {
+	c := NewFcmClient("key")
+
+	notificationPayload := NotificationPayload{
+		Title: "title - foo",
+		Body:  "body - bar",
+		Image: "https://example.com/img.jpg",
+	}
+	c.SetNotificationPayload(&notificationPayload)
+
+	messagingClientMock := new(fcmMock)
+	mockCall := messagingClientMock.On("SendEachForMulticast", mock.Anything, mock.Anything).Return(
+		&messaging.BatchResponse{
+			SuccessCount: 1,
+			FailureCount: 1,
+			Responses: []*messaging.SendResponse{
+				{
+					Success:   false,
+					MessageID: "123",
+					Error:     errors.New("something went wrong"),
+				},
+				{
+					Success:   true,
+					MessageID: "123",
+					Error:     nil,
+				},
+			},
+		},
+		nil,
+	)
+
+	fcmRespStatus, err := c.sendOnceFirebaseAdminGo(messagingClientMock)
+
+	messagingClientMock.AssertExpectations(t)
+	mockCall.Unset()
+
+	require.Nil(t, err)
+	require.Equal(t, &FcmResponseStatus{
+		Ok:            true,
+		StatusCode:    http.StatusOK,
+		MulticastId:   0,
+		Success:       1,
+		Fail:          1,
+		Canonical_ids: 0,
+		Results: []map[string]string{
+			{
+				"MessageID": "123",
+				"Success":   "false",
+				"Error":     "something went wrong",
+			},
+			{
+				"MessageID": "123",
+				"Success":   "true",
+			},
+		},
+		MsgId: 0,
+	}, fcmRespStatus)
+}
+
+func TestMakeMulticastMessageData_Nil(t *testing.T) {
+	msg := FcmMsg{}
+	res, ok := msg.makeMulticastMessageData()
+
+	require.Equal(t, true, ok)
+	require.Equal(t, &map[string]string{}, res)
+}
+
+func TestMakeMulticastMessageData_NotNil(t *testing.T) {
+	type Action struct {
+		Type  string
+		Value string
+	}
+
+	msg := FcmMsg{
+		Data: map[string]interface{}{
+			"actions":   []Action{{Type: "Like", Value: "like"}},
+			"body":      "example body",
+			"item_type": "Post",
+			"item_id":   "123",
+		},
+	}
+
+	res, ok := msg.makeMulticastMessageData()
+
+	require.Equal(t, true, ok)
+	require.Equal(t, &map[string]string{
+		"body":             "example body",
+		"item_type":        "Post",
+		"item_id":          "123",
+		"actions":          `[{"Type":"Like","Value":"like"}]`,
+		"actor_nickname":   "",
+		"badge_count":      "0",
+		"deeplink":         "",
+		"image_url":        "",
+		"sound":            "",
+		"title":            "",
+		"tracking_payload": "",
+	}, res)
 }

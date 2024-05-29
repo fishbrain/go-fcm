@@ -46,6 +46,10 @@ var (
 
 var firebaseApp *firebase.App
 
+type MessagingClient interface {
+	SendEachForMulticast(context.Context, *messaging.MulticastMessage) (*messaging.BatchResponse, error)
+}
+
 // FcmClient stores the key and the Message (FcmMsg)
 type FcmClient struct {
 	ApiKey  string
@@ -229,6 +233,11 @@ func (this *FcmClient) Send() (*FcmResponseStatus, error) {
 }
 
 func (this *FcmMsg) makeMulticastMessageData() (*map[string]string, bool) {
+	if this.Data == nil {
+		emptyMap := make(map[string]string)
+		return &emptyMap, true
+	}
+
 	data, ok := this.Data.(map[string]interface{})
 	if !ok {
 		return nil, false
@@ -325,7 +334,7 @@ func (this *FcmMsg) makeMulticastMessageData() (*map[string]string, bool) {
 	return &dataMap, true
 }
 
-func (this *FcmClient) sendOnceFirebaseAdminGo(client *messaging.Client) (*FcmResponseStatus, error) {
+func (this *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResponseStatus, error) {
 	multicastMessage, ok := this.Message.makeMulticastMessageData()
 	if !ok {
 		return nil, errors.New("could not build multicast message for Firebase Admin Go library")
