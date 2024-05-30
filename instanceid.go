@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -125,7 +125,7 @@ func (this *FcmClient) GetInfo(withDetails bool, instanceIdToken string) (*Insta
 
 	defer response.Body.Close()
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (this *FcmClient) SubscribeToTopic(instanceIdToken string, topic string) (*
 
 	defer response.Body.Close()
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +268,7 @@ func (this *FcmClient) BatchSubscribeToTopic(tokens []string, topic string) (*Ba
 
 	defer response.Body.Close()
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +310,7 @@ func (this *FcmClient) BatchUnsubscribeFromTopic(tokens []string, topic string) 
 
 	defer response.Body.Close()
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +333,7 @@ func (this *BatchResponse) PrintResults() {
 	fmt.Println("Status      : ", this.Status)
 	fmt.Println("Status Code : ", this.StatusCode)
 	for i, val := range this.Results {
-		if batchErrors[val["error"]] == true {
+		if _, ok := batchErrors[val["error"]]; ok {
 			fmt.Println("ID: ", i, " | ", val["error"])
 		}
 	}
@@ -399,7 +399,7 @@ func (this *FcmClient) ApnsBatchImportRequest(apnsReq *ApnsBatchRequest) (*ApnsB
 
 	defer response.Body.Close()
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -431,7 +431,6 @@ func (this *ApnsBatchRequest) ToByte() ([]byte, error) {
 
 // parseApnsBatchResponse converts apns byte response to ApnsBatchResponse
 func parseApnsBatchResponse(resp []byte) (*ApnsBatchResponse, error) {
-
 	result := new(ApnsBatchResponse)
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return nil, err
