@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"time"
 
-	firebase "firebase.google.com/go/v4"
 	messaging "firebase.google.com/go/v4/messaging"
 	"github.com/fishbrain/go-fcm/utils"
 	logging "github.com/fishbrain/logging-go"
@@ -43,8 +42,6 @@ var (
 	fcmServerUrl = fcm_server_url
 )
 
-var firebaseApp *firebase.App
-
 type MessagingClient interface {
 	SendEachForMulticast(context.Context, *messaging.MulticastMessage) (*messaging.BatchResponse, error)
 }
@@ -74,8 +71,7 @@ type FcmMsg struct {
 
 // FcmMsg represents fcm response message - (tokens and topics)
 type FcmResponseStatus struct {
-	Ok bool
-
+	Ok            bool
 	StatusCode    int
 	MulticastId   int64               `json:"multicast_id"`
 	Success       int                 `json:"success"`
@@ -215,20 +211,14 @@ func (this *FcmClient) Send() (*FcmResponseStatus, error) {
 		client, err := utils.AuthorizeAndGetFirebaseMessagingClient()
 		if err != nil {
 			logging.Log.Infof("Error getting messaging client: %s", err)
-		}
-		logging.Log.Infof("FCM Client: %v", client)
-	}
-
-	if firebaseApp != nil {
-		client, err := firebaseApp.Messaging(context.TODO())
-		if err != nil {
 			return &FcmResponseStatus{}, err
 		}
+		logging.Log.Infof("FCM Client: %v", client)
 
 		return this.sendOnceFirebaseAdminGo(client)
-	} else {
-		return this.sendOnce()
 	}
+
+	return this.sendOnce()
 }
 
 func (this *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResponseStatus, error) {
