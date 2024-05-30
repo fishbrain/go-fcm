@@ -2,14 +2,16 @@ package fcm
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
+	messaging "firebase.google.com/go/v4/messaging"
 	"github.com/fishbrain/go-fcm/utils"
-
 	logging "github.com/fishbrain/logging-go"
 )
 
@@ -39,6 +41,10 @@ var (
 	// fcmServerUrl for testing purposes
 	fcmServerUrl = fcm_server_url
 )
+
+type MessagingClient interface {
+	SendEachForMulticast(context.Context, *messaging.MulticastMessage) (*messaging.BatchResponse, error)
+}
 
 // FcmClient stores the key and the Message (FcmMsg)
 type FcmClient struct {
@@ -105,7 +111,6 @@ func NewFcmClient(apiKey string) *FcmClient {
 
 // NewFcmTopicMsg sets the targeted token/topic and the data payload
 func (this *FcmClient) NewFcmTopicMsg(to string, body map[string]string) *FcmClient {
-
 	this.NewFcmMsgTo(to, body)
 
 	return this
@@ -121,11 +126,9 @@ func (this *FcmClient) NewFcmMsgTo(to string, body interface{}) *FcmClient {
 
 // SetMsgData sets data payload
 func (this *FcmClient) SetMsgData(body interface{}) *FcmClient {
-
 	this.Message.Data = body
 
 	return this
-
 }
 
 // NewFcmRegIdsMsg gets a list of devices with data payload
@@ -134,7 +137,6 @@ func (this *FcmClient) NewFcmRegIdsMsg(list []string, body interface{}) *FcmClie
 	this.Message.Data = body
 
 	return this
-
 }
 
 // newDevicesList init the devices list
@@ -143,12 +145,10 @@ func (this *FcmClient) newDevicesList(list []string) *FcmClient {
 	copy(this.Message.RegistrationIds, list)
 
 	return this
-
 }
 
 // AppendDevices adds more devices/tokens to the Fcm request
 func (this *FcmClient) AppendDevices(list []string) *FcmClient {
-
 	this.Message.RegistrationIds = append(this.Message.RegistrationIds, list...)
 
 	return this
@@ -161,12 +161,9 @@ func (this *FcmClient) apiKeyHeader() string {
 
 // sendOnce send a single request to fcm
 func (this *FcmClient) sendOnce() (*FcmResponseStatus, error) {
-
-	fcmRespStatus := new(FcmResponseStatus)
-
-	jsonByte, err := this.Message.toJsonByte()
+	jsonByte, err := json.Marshal(this.Message)
 	if err != nil {
-		return fcmRespStatus, err
+		return &FcmResponseStatus{}, err
 	}
 
 	request, err := http.NewRequest("POST", fcmServerUrl, bytes.NewBuffer(jsonByte))
@@ -174,21 +171,22 @@ func (this *FcmClient) sendOnce() (*FcmResponseStatus, error) {
 	request.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
-	response, err := client.Do(request)
 
+	response, err := client.Do(request)
 	if err != nil {
-		return fcmRespStatus, err
+		return &FcmResponseStatus{}, err
 	}
 	defer response.Body.Close()
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return fcmRespStatus, err
+		return &FcmResponseStatus{}, err
 	}
 
-	fcmRespStatus.StatusCode = response.StatusCode
-
-	fcmRespStatus.RetryAfter = response.Header.Get(retry_after_header)
+	fcmRespStatus := &FcmResponseStatus{
+		StatusCode: response.StatusCode,
+		RetryAfter: response.Header.Get(retry_after_header),
+	}
 
 	if response.StatusCode != 200 {
 		fcmRespStatus.Err = string(body)
@@ -199,6 +197,7 @@ func (this *FcmClient) sendOnce() (*FcmResponseStatus, error) {
 	if err != nil {
 		return fcmRespStatus, err
 	}
+
 	fcmRespStatus.Ok = true
 
 	return fcmRespStatus, nil
@@ -212,35 +211,54 @@ func (this *FcmClient) Send() (*FcmResponseStatus, error) {
 		client, err := utils.AuthorizeAndGetFirebaseMessagingClient()
 		if err != nil {
 			logging.Log.Infof("Error getting messaging client: %s", err)
+			return &FcmResponseStatus{}, err
 		}
 		logging.Log.Infof("FCM Client: %v", client)
 
+		return this.sendOnceFirebaseAdminGo(client)
 	}
-	return this.sendOnce()
 
+	return this.sendOnce()
 }
 
-// toJsonByte converts FcmMsg to a json byte
-func (this *FcmMsg) toJsonByte() ([]byte, error) {
+func (this *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResponseStatus, error) {
+	multicastMessage, ok := this.Message.makeMulticastMessageData()
+	if !ok {
+		return nil, errors.New("could not build multicast message for Firebase Admin Go library")
+	}
 
-	return json.Marshal(this)
+	message := &messaging.MulticastMessage{
+		Data:   *multicastMessage,
+		Tokens: this.Message.RegistrationIds,
+		Notification: &messaging.Notification{
+			Body:     this.Message.Notification.Body,
+			Title:    this.Message.Notification.Title,
+			ImageURL: this.Message.Notification.Icon,
+		},
+	}
 
+	batchResponse, err := client.SendEachForMulticast(context.Background(), message)
+	if err != nil {
+		return &FcmResponseStatus{}, err
+	}
+
+	fcmRespStatus := toFcmRespStatus(batchResponse)
+
+	return fcmRespStatus, nil
 }
 
 // parseStatusBody parse FCM response body
 func (this *FcmResponseStatus) parseStatusBody(body []byte) error {
-
 	if err := json.Unmarshal([]byte(body), &this); err != nil {
 		return err
 	}
-	return nil
 
+	return nil
 }
 
 // SetPriority Sets the priority of the message.
 // Priority_HIGH or Priority_NORMAL
 func (this *FcmClient) SetPriority(p string) *FcmClient {
-
 	if p == Priority_HIGH {
 		this.Message.Priority = Priority_HIGH
 	} else {
@@ -256,7 +274,6 @@ func (this *FcmClient) SetPriority(p string) *FcmClient {
 // This is intended to avoid sending too many of the same messages when the
 // device comes back online or becomes active (see delay_while_idle).
 func (this *FcmClient) SetCollapseKey(val string) *FcmClient {
-
 	this.Message.CollapseKey = val
 
 	return this
@@ -265,7 +282,6 @@ func (this *FcmClient) SetCollapseKey(val string) *FcmClient {
 // SetNotificationPayload sets the notification payload based on the specs
 // https://firebase.google.com/docs/cloud-messaging/http-server-ref
 func (this *FcmClient) SetNotificationPayload(payload *NotificationPayload) *FcmClient {
-
 	this.Message.Notification = payload
 
 	return this
@@ -276,7 +292,6 @@ func (this *FcmClient) SetNotificationPayload(payload *NotificationPayload) *Fcm
 // to true, an inactive client app is awoken. On Android, data messages wake
 // the app by default. On Chrome, currently not supported.
 func (this *FcmClient) SetContentAvailable(isContentAvailable bool) *FcmClient {
-
 	this.Message.ContentAvailable = isContentAvailable
 
 	return this
@@ -286,7 +301,6 @@ func (this *FcmClient) SetContentAvailable(isContentAvailable bool) *FcmClient {
 // the message should not be sent until the device becomes active.
 // The default value is false.
 func (this *FcmClient) SetDelayWhileIdle(isDelayWhileIdle bool) *FcmClient {
-
 	this.Message.DelayWhileIdle = isDelayWhileIdle
 
 	return this
@@ -298,16 +312,12 @@ func (this *FcmClient) SetDelayWhileIdle(isDelayWhileIdle bool) *FcmClient {
 // For more information, see
 // https://firebase.google.com/docs/cloud-messaging/concept-options#ttl
 func (this *FcmClient) SetTimeToLive(ttl int) *FcmClient {
-
 	if ttl > MAX_TTL {
-
 		this.Message.TimeToLive = MAX_TTL
-
 	} else {
-
 		this.Message.TimeToLive = ttl
-
 	}
+
 	return this
 }
 
@@ -315,7 +325,6 @@ func (this *FcmClient) SetTimeToLive(ttl int) *FcmClient {
 // application where the registration tokens must match in order to
 // receive the message.
 func (this *FcmClient) SetRestrictedPackageName(pkg string) *FcmClient {
-
 	this.Message.RestrictedPackageName = pkg
 
 	return this
@@ -325,7 +334,6 @@ func (this *FcmClient) SetRestrictedPackageName(pkg string) *FcmClient {
 // a request without actually sending a message.
 // The default value is false
 func (this *FcmClient) SetDryRun(drun bool) *FcmClient {
-
 	this.Message.DryRun = drun
 
 	return this
@@ -338,7 +346,6 @@ func (this *FcmClient) SetDryRun(drun bool) *FcmClient {
 // using a Notification Service app extension.
 // This parameter will be ignored for Android and web.
 func (this *FcmClient) SetMutableContent(mc bool) *FcmClient {
-
 	this.Message.MutableContent = mc
 
 	return this
@@ -368,7 +375,7 @@ func (this *FcmResponseStatus) IsTimeout() bool {
 	} else if this.StatusCode == 200 {
 		for _, val := range this.Results {
 			for k, v := range val {
-				if k == error_key && retreyableErrors[v] == true {
+				if k == error_key && retreyableErrors[v] {
 					return true
 				}
 			}
@@ -382,11 +389,13 @@ func (this *FcmResponseStatus) IsTimeout() bool {
 // to a time.Duration
 func (this *FcmResponseStatus) GetRetryAfterTime() (t time.Duration, e error) {
 	t, e = time.ParseDuration(this.RetryAfter)
+
 	return
 }
 
 // SetCondition to set a logical expression of conditions that determine the message target
 func (this *FcmClient) SetCondition(condition string) *FcmClient {
 	this.Message.Condition = condition
+
 	return this
 }
