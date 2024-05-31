@@ -119,7 +119,7 @@ func toFcmRespStatus(resp *messaging.BatchResponse) *FcmResponseStatus {
 		ok = true
 		statusCode = http.StatusOK
 	}
-	logging.Log.Infof("Batch response: %v", resp)
+	logging.Log.Infof("Batch response: %v", resp.Responses)
 
 	status := FcmResponseStatus{
 		Ok:            ok,
