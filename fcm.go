@@ -239,6 +239,7 @@ func (this *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResp
 
 	batchResponse, err := client.SendEachForMulticast(context.Background(), message)
 	if err != nil {
+		logging.Log.Infof("Error sending message: %s", err)
 		return &FcmResponseStatus{}, err
 	}
 

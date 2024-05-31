@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	messaging "firebase.google.com/go/v4/messaging"
+	logging "github.com/fishbrain/logging-go"
 )
 
 func (this *FcmMsg) makeMulticastMessageData() (*map[string]string, bool) {
@@ -118,6 +119,7 @@ func toFcmRespStatus(resp *messaging.BatchResponse) *FcmResponseStatus {
 		ok = true
 		statusCode = http.StatusOK
 	}
+	logging.Log.Infof("Batch response: %v", resp)
 
 	status := FcmResponseStatus{
 		Ok:            ok,
