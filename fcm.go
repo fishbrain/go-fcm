@@ -214,28 +214,28 @@ func (this *FcmClient) Send() (*FcmResponseStatus, error) {
 		}
 		logging.Log.Infof("AuthorizeAndGetFirebaseMessagingClient FCM Client: %v", client)
 
-		response, err := this.sendOnceFirebaseAdminGo(client)
-		if err != nil {
-			logging.Log.Infof("AuthorizeAndGetFirebaseMessagingClient: Error sending message %v", response)
-		}else {
-			logging.Log.Infof("AuthorizeAndGetFirebaseMessagingClient: Success sending message")
-			return response, err
-		}
+		// response, err := this.sendOnceFirebaseAdminGo(client)
+		// if err != nil {
+		// 	logging.Log.Infof("AuthorizeAndGetFirebaseMessagingClient: Error sending message %v", response)
+		// }else {
+		// 	logging.Log.Infof("AuthorizeAndGetFirebaseMessagingClient: Success sending message")
+		// 	return response, err
+		// }
 
-		client, err = utils.AuthorizeAndGetfcmClientFromIdPoolKey()
-		if err != nil {
-			logging.Log.Infof("AuthorizeAndGetfcmClientFromIdPoolKey Error getting messaging client: %s", err)
-		}
-		logging.Log.Infof("AuthorizeAndGetfcmClientFromIdPoolKey FCM Client: %v", client)
+		// client, err = utils.AuthorizeAndGetfcmClientFromIdPoolKey()
+		// if err != nil {
+		// 	logging.Log.Infof("AuthorizeAndGetfcmClientFromIdPoolKey Error getting messaging client: %s", err)
+		// }
+		// logging.Log.Infof("AuthorizeAndGetfcmClientFromIdPoolKey FCM Client: %v", client)
 
-		response, err = this.sendOnceFirebaseAdminGo(client)
+		// response, err = this.sendOnceFirebaseAdminGo(client)
 
-		if err != nil {
-			logging.Log.Infof("AuthorizeAndGetfcmClientFromKey Error sending message %v", response)
-		}else {
-			logging.Log.Infof("AuthorizeAndGetfcmClientFromIdPoolKey Success sending message")
-			return response, err
-		}
+		// if err != nil {
+		// 	logging.Log.Infof("AuthorizeAndGetfcmClientFromKey Error sending message %v", response)
+		// }else {
+		// 	logging.Log.Infof("AuthorizeAndGetfcmClientFromIdPoolKey Success sending message")
+		// 	return response, err
+		// }
 
 		client, err = utils.AuthorizeAndGetfcmClientFromKey()
 		if err != nil {
@@ -244,7 +244,7 @@ func (this *FcmClient) Send() (*FcmResponseStatus, error) {
 		}
 		logging.Log.Infof("AuthorizeAndGetfcmClientFromKey FCM Client: %v", client)
 
-		response, err = this.sendOnceFirebaseAdminGo(client)
+		response, err := this.sendOnceFirebaseAdminGo(client)
 		
 		if err != nil {
 			logging.Log.Infof("AuthorizeAndGetfcmClientFromKey Error sending message %v", response)

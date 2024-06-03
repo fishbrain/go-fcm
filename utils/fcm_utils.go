@@ -8,9 +8,6 @@ import (
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/messaging"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	logging "github.com/fishbrain/logging-go"
 	"google.golang.org/api/option"
 )
@@ -58,56 +55,23 @@ func AuthorizeAndGetFirebaseMessagingClient() (*messaging.Client, error) {
 }
 
 func AuthorizeAndGetfcmClientFromKey() (*messaging.Client, error) {
-		
-	secretName := "staging-bonito-google-identity-pool-credentials"
-	region := "eu-west-1"
 
-	config, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
-	if err != nil {
-		logging.Log.Errorf("Error loading AWS config: %v", err)
-	}
-	logging.Log.Infof("AWS config loaded")
-	// Create Secrets Manager client
-	svc := secretsmanager.NewFromConfig(config)
-
-	input := &secretsmanager.GetSecretValueInput{
-		SecretId:     aws.String(secretName),
-		VersionStage: aws.String("AWSCURRENT"), // VersionStage defaults to AWSCURRENT if unspecified
-	}
-	logging.Log.Infof("AWS Secret loaded")
-	result, err := svc.GetSecretValue(context.TODO(), input)
-	if err != nil {
-		// For a list of exceptions thrown, see
-		// https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
-		logging.Log.Infof("Error loading secret value: %v", err)
-	}
-
-	// Decrypts secret using the associated KMS key.
-	var secretString = *result.SecretString
-
-	if err != nil {
-		logging.Log.Infof("AuthorizeAndGetfcmClientFromKey: Error marshalling key: %s", err)
-		return nil, err
-	}
+	var secretString = os.Getenv("FIREBASE_SERVICE_ACCOUNT_KEY")
 
 	opts := []option.ClientOption{option.WithCredentialsJSON([]byte(secretString))}
 
-	projectId := os.Getenv("GCP_PROD_PROJECT_ID")
-	logging.Log.Infof("AuthorizeAndGetfcmClientFromKey: Initializing firebase app with project ID: %s", projectId)
 	firebaseApp, err := firebaseNewApp(context.Background(), nil, opts...)
 
 	if err != nil {
-		logging.Log.Infof("AuthorizeAndGetfcmClientFromKey: Error initializing firebase app: %s", err)
+		logging.Log.Infof("Error initializing firebase app: %s", err)
 		return nil, err
 	}
-	logging.Log.Infof("App: %s", firebaseApp)
 
 	fcmClient, err := firebaseApp.Messaging(context.Background())
 	if err != nil {
-		logging.Log.Infof("AuthorizeAndGetfcmClientFromKey: Error initializing FCM client: %s", err)
+		logging.Log.Infof("Error initializing FCM client: %s", err)
 		return nil, err
 	}
-	logging.Log.Infof("AuthorizeAndGetfcmClientFromKey: FCM Client: %v", fcmClient)
 
 	return fcmClient, err
 }
