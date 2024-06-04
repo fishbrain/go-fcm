@@ -245,10 +245,10 @@ func (this *FcmClient) Send() (*FcmResponseStatus, error) {
 		logging.Log.Infof("AuthorizeAndGetfcmClientFromKey FCM Client: %v", client)
 
 		response, err := this.sendOnceFirebaseAdminGo(client)
-		
+
 		if err != nil {
 			logging.Log.Infof("AuthorizeAndGetfcmClientFromKey Error sending message %v", response)
-		}else {
+		} else {
 			logging.Log.Infof("AuthorizeAndGetfcmClientFromKey Success sending message")
 			return response, err
 		}
@@ -281,11 +281,7 @@ func (this *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResp
 
 	fcmRespStatus := toFcmRespStatus(batchResponse)
 
-	if fcmRespStatus.Ok {
-		return fcmRespStatus, nil
-	}else {
-		return fcmRespStatus, errors.New("could not send message")
-	}
+	return fcmRespStatus, nil
 }
 
 // parseStatusBody parse FCM response body
