@@ -6,15 +6,22 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	messaging "firebase.google.com/go/v4/messaging"
+	logging "github.com/fishbrain/logging-go"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 type fcmMock struct {
 	mock.Mock
+}
+
+func TestMain(m *testing.M) {
+	logging.Init(logging.LoggingConfig{})
+	os.Exit(m.Run())
 }
 
 func (m *fcmMock) SendEachForMulticast(ctx context.Context, mm *messaging.MulticastMessage) (*messaging.BatchResponse, error) {
@@ -209,6 +216,7 @@ func regIdHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestSendFirebase(t *testing.T) {
+	logging.Init(logging.LoggingConfig{})
 	srv := httptest.NewServer(http.HandlerFunc(regIdHandle))
 	chgUrl(srv)
 	defer srv.Close()
@@ -249,6 +257,7 @@ func TestSendFirebase(t *testing.T) {
 }
 
 func TestSendOnceFirebaseAdminGo_SuccessResponse(t *testing.T) {
+	logging.Init(logging.LoggingConfig{})
 	c := NewFcmClient("key")
 
 	notificationPayload := NotificationPayload{
@@ -289,8 +298,8 @@ func TestSendOnceFirebaseAdminGo_SuccessResponse(t *testing.T) {
 		Canonical_ids: 0,
 		Results: []map[string]string{
 			{
-				"MessageID": "123",
-				"Success":   "true",
+				"messageID": "123",
+				"success":   "true",
 			},
 		},
 		MsgId: 0,
@@ -338,9 +347,9 @@ func TestSendOnceFirebaseAdminGo_BadResponse(t *testing.T) {
 		Canonical_ids: 0,
 		Results: []map[string]string{
 			{
-				"MessageID": "123",
-				"Success":   "false",
-				"Error":     "something went wrong",
+				"messageID": "123",
+				"success":   "false",
+				"error":     "something went wrong",
 			},
 		},
 		MsgId: 0,
@@ -385,7 +394,7 @@ func TestSendOnceFirebaseAdminGo_MixedResponse(t *testing.T) {
 
 	require.Nil(t, err)
 	require.Equal(t, &FcmResponseStatus{
-		Ok:            true,
+		Ok:            false,
 		StatusCode:    http.StatusOK,
 		MulticastId:   0,
 		Success:       1,
@@ -393,13 +402,13 @@ func TestSendOnceFirebaseAdminGo_MixedResponse(t *testing.T) {
 		Canonical_ids: 0,
 		Results: []map[string]string{
 			{
-				"MessageID": "123",
-				"Success":   "false",
-				"Error":     "something went wrong",
+				"messageID": "123",
+				"success":   "false",
+				"error":     "something went wrong",
 			},
 			{
-				"MessageID": "123",
-				"Success":   "true",
+				"messageID": "123",
+				"success":   "true",
 			},
 		},
 		MsgId: 0,

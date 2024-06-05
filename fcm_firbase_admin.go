@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	messaging "firebase.google.com/go/v4/messaging"
-	logging "github.com/fishbrain/logging-go"
 )
 
 func (this *FcmMsg) makeMulticastMessageData() (*map[string]string, bool) {
@@ -119,7 +118,11 @@ func toFcmRespStatus(resp *messaging.BatchResponse) *FcmResponseStatus {
 		ok = true
 		statusCode = http.StatusOK
 	}
-	logging.Log.Infof("Batch response: %v", resp.Responses)
+
+	if resp.FailureCount > 0 {
+		// NOTE: With Ok set to false bonito will try to inspect responses and handle errors.
+		ok = false
+	}
 
 	status := FcmResponseStatus{
 		Ok:            ok,
@@ -139,13 +142,13 @@ func toFcmResponseResults(original *[]*messaging.SendResponse) *[]map[string]str
 
 	for _, resp := range *original {
 		elem = map[string]string{
-			"Success":   strconv.FormatBool(resp.Success),
-			"MessageID": resp.MessageID,
+			"success":   strconv.FormatBool(resp.Success),
+			"messageID": resp.MessageID,
 		}
 
 		optErr := resp.Error
 		if optErr != nil {
-			elem["Error"] = optErr.Error()
+			elem["error"] = optErr.Error()
 		}
 
 		result = append(result, elem)
