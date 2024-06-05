@@ -101,6 +101,8 @@ type NotificationPayload struct {
 	AndroidChannelID string `json:"android_channel_id,omitempty"`
 }
 
+var authAndGetFcmClient = utils.AuthorizeAndGetfcmClientFromKey
+
 // NewFcmClient init and create fcm client
 func NewFcmClient(apiKey string) *FcmClient {
 	fcmc := new(FcmClient)
@@ -205,56 +207,47 @@ func (this *FcmClient) sendOnce() (*FcmResponseStatus, error) {
 
 // Send to fcm
 func (this *FcmClient) Send() (*FcmResponseStatus, error) {
+
 	if this.Message.DryRun {
 		logging.Log.Info("Dry run mode enabled")
 
 		client, err := utils.AuthorizeAndGetFirebaseMessagingClient()
 		if err != nil {
-			logging.Log.Infof("AuthorizeAndGetFirebaseMessagingClient: Error getting messaging client: %s", err)
+			logging.Log.Infof("Error getting messaging client with embedded key: %s", err)
 		}
-		logging.Log.Infof("AuthorizeAndGetFirebaseMessagingClient FCM Client: %v", client)
-
-		// response, err := this.sendOnceFirebaseAdminGo(client)
-		// if err != nil {
-		// 	logging.Log.Infof("AuthorizeAndGetFirebaseMessagingClient: Error sending message %v", response)
-		// }else {
-		// 	logging.Log.Infof("AuthorizeAndGetFirebaseMessagingClient: Success sending message")
-		// 	return response, err
-		// }
-
-		// client, err = utils.AuthorizeAndGetfcmClientFromIdPoolKey()
-		// if err != nil {
-		// 	logging.Log.Infof("AuthorizeAndGetfcmClientFromIdPoolKey Error getting messaging client: %s", err)
-		// }
-		// logging.Log.Infof("AuthorizeAndGetfcmClientFromIdPoolKey FCM Client: %v", client)
-
-		// response, err = this.sendOnceFirebaseAdminGo(client)
-
-		// if err != nil {
-		// 	logging.Log.Infof("AuthorizeAndGetfcmClientFromKey Error sending message %v", response)
-		// }else {
-		// 	logging.Log.Infof("AuthorizeAndGetfcmClientFromIdPoolKey Success sending message")
-		// 	return response, err
-		// }
-
-		client, err = utils.AuthorizeAndGetfcmClientFromKey()
-		if err != nil {
-			logging.Log.Infof("AuthorizeAndGetfcmClientFromKey Error getting messaging client: %s", err)
-			// return &FcmResponseStatus{}, err
-		}
-		logging.Log.Infof("AuthorizeAndGetfcmClientFromKey FCM Client: %v", client)
+		logging.Log.Infof("FCM Client with embedded key: %v", client)
 
 		response, err := this.sendOnceFirebaseAdminGo(client)
-
-		if err != nil {
-			logging.Log.Infof("AuthorizeAndGetfcmClientFromKey Error sending message %v", response)
-		} else {
-			logging.Log.Infof("AuthorizeAndGetfcmClientFromKey Success sending message")
+		if response.Ok {
+			logging.Log.Infof("Success sending message with embedded key")
 			return response, err
+		}else {
+			logging.Log.Infof("Error sending message with embedded key %v", response)
+		}
+
+		client, err = utils.AuthorizeAndGetfcmClientFromIdPoolKey()
+		if err != nil {
+			logging.Log.Infof("Error getting messaging client with key as a map: %s", err)
+		}
+		logging.Log.Infof("FCM Client with key as a map: %v", client)
+
+		response, err = this.sendOnceFirebaseAdminGo(client)
+		
+		if response.Ok{
+			logging.Log.Infof("Success sending message with key as a map")
+			return response, err
+		}else {
+			logging.Log.Infof("Error sending message with key as a map %v", response)
 		}
 	}
 
-	return this.sendOnce()
+	client, err := authAndGetFcmClient()
+	if err != nil {
+		logging.Log.Errorf("Error getting messaging client: %s", err)
+		return &FcmResponseStatus{}, err
+	}
+
+	return this.sendOnceFirebaseAdminGo(client)
 }
 
 func (this *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResponseStatus, error) {
@@ -275,7 +268,7 @@ func (this *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResp
 
 	batchResponse, err := client.SendEachForMulticast(context.Background(), message)
 	if err != nil {
-		logging.Log.Infof("Error sending message: %s", err)
+		logging.Log.Errorf("Error sending message: %s", err)
 		return &FcmResponseStatus{}, err
 	}
 
