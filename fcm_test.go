@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	messaging "firebase.google.com/go/v4/messaging"
@@ -16,6 +17,11 @@ import (
 
 type fcmMock struct {
 	mock.Mock
+}
+
+func TestMain(m *testing.M) {
+	logging.Init(logging.LoggingConfig{})
+	os.Exit(m.Run())
 }
 
 func (m *fcmMock) SendEachForMulticast(ctx context.Context, mm *messaging.MulticastMessage) (*messaging.BatchResponse, error) {
@@ -301,7 +307,6 @@ func TestSendOnceFirebaseAdminGo_SuccessResponse(t *testing.T) {
 }
 
 func TestSendOnceFirebaseAdminGo_BadResponse(t *testing.T) {
-	logging.Init(logging.LoggingConfig{})
 	c := NewFcmClient("key")
 
 	notificationPayload := NotificationPayload{
@@ -352,7 +357,6 @@ func TestSendOnceFirebaseAdminGo_BadResponse(t *testing.T) {
 }
 
 func TestSendOnceFirebaseAdminGo_MixedResponse(t *testing.T) {
-	logging.Init(logging.LoggingConfig{})
 	c := NewFcmClient("key")
 
 	notificationPayload := NotificationPayload{
@@ -412,7 +416,6 @@ func TestSendOnceFirebaseAdminGo_MixedResponse(t *testing.T) {
 }
 
 func TestMakeMulticastMessageData_Nil(t *testing.T) {
-	logging.Init(logging.LoggingConfig{})
 	msg := FcmMsg{}
 	res, ok := msg.makeMulticastMessageData()
 
