@@ -261,11 +261,13 @@ func (this *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResp
 	message := &messaging.MulticastMessage{
 		Data:   *multicastMessage,
 		Tokens: this.Message.RegistrationIds,
-		Notification: &messaging.Notification{
-			Body:     this.Message.Notification.Body,
-			Title:    this.Message.Notification.Title,
-			ImageURL: this.Message.Notification.Icon,
-		},
+	}
+	
+	if this.Message.Notification != nil {
+		message.Notification = &messaging.Notification{
+			Title: this.Message.Notification.Title,
+			Body:  this.Message.Notification.Body,
+		}
 	}
 
 	batchResponse, err := client.SendEachForMulticast(context.Background(), message)

@@ -306,6 +306,49 @@ func TestSendOnceFirebaseAdminGo_SuccessResponse(t *testing.T) {
 	}, fcmRespStatus)
 }
 
+func TestSendOnceFirebaseAdminGo_SuccessResponseWhenNoNotificationPayload(t *testing.T) {
+	logging.Init(logging.LoggingConfig{})
+	c := NewFcmClient("key")
+
+	messagingClientMock := new(fcmMock)
+	mockCall := messagingClientMock.On("SendEachForMulticast", mock.Anything, mock.Anything).Return(
+		&messaging.BatchResponse{
+			SuccessCount: 1,
+			FailureCount: 0,
+			Responses: []*messaging.SendResponse{
+				{
+					Success:   true,
+					MessageID: "123",
+					Error:     nil,
+				},
+			},
+		},
+		nil,
+	)
+
+	fcmRespStatus, err := c.sendOnceFirebaseAdminGo(messagingClientMock)
+
+	messagingClientMock.AssertExpectations(t)
+	mockCall.Unset()
+
+	require.Nil(t, err)
+	require.Equal(t, &FcmResponseStatus{
+		Ok:            true,
+		StatusCode:    http.StatusOK,
+		MulticastId:   0,
+		Success:       1,
+		Fail:          0,
+		Canonical_ids: 0,
+		Results: []map[string]string{
+			{
+				"messageID": "123",
+				"success":   "true",
+			},
+		},
+		MsgId: 0,
+	}, fcmRespStatus)
+}
+
 func TestSendOnceFirebaseAdminGo_BadResponse(t *testing.T) {
 	c := NewFcmClient("key")
 
