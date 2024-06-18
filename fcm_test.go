@@ -489,12 +489,5 @@ func TestMakeMulticastMessageData_NotNil(t *testing.T) {
 		"item_type":        "Post",
 		"item_id":          "123",
 		"actions":          `[{"Type":"Like","Value":"like"}]`,
-		"actor_nickname":   "",
-		"badge_count":      "0",
-		"deeplink":         "",
-		"image_url":        "",
-		"sound":            "",
-		"title":            "",
-		"tracking_payload": "",
 	}, res)
 }
