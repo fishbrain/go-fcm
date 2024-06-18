@@ -211,7 +211,15 @@ func (this *FcmClient) Send() (*FcmResponseStatus, error) {
 	if this.Message.DryRun {
 		logging.Log.Info("Dry run mode enabled")
 
-		client, err := utils.AuthorizeAndGetFirebaseMessagingClient()
+		client, err := authAndGetFcmClient()
+		if err != nil {
+			logging.Log.Errorf("Error getting messaging client: %s", err)
+			return &FcmResponseStatus{}, err
+		}
+
+		return this.sendOnceFirebaseAdminGo(client)
+
+		client, err = utils.AuthorizeAndGetFirebaseMessagingClient()
 		if err != nil {
 			logging.Log.Infof("Error getting messaging client with embedded key: %s", err)
 		}
@@ -241,13 +249,7 @@ func (this *FcmClient) Send() (*FcmResponseStatus, error) {
 		}
 	}
 
-	client, err := authAndGetFcmClient()
-	if err != nil {
-		logging.Log.Errorf("Error getting messaging client: %s", err)
-		return &FcmResponseStatus{}, err
-	}
-
-	return this.sendOnceFirebaseAdminGo(client)
+	return this.sendOnce()
 }
 
 func (this *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResponseStatus, error) {
