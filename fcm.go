@@ -256,8 +256,6 @@ func (this *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResp
 		return nil, errors.New("could not build multicast message for Firebase Admin Go library")
 	}
 
-	logging.Log.Infof("Sending message %v ", this.Message)
-
 	message := &messaging.MulticastMessage{
 		Data:   *multicastMessage,
 		Tokens: this.Message.RegistrationIds,
