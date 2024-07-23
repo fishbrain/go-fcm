@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"time"
+	"strconv"
 
 	messaging "firebase.google.com/go/v4/messaging"
 	"github.com/fishbrain/go-fcm/utils"
@@ -266,6 +267,12 @@ func (this *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResp
 			Title: this.Message.Notification.Title,
 			Body:  this.Message.Notification.Body,
 		}
+
+		message.APNS = &messaging.APNSConfig{
+			Payload: &messaging.APNSPayload{
+				Aps: this.Message.Notification.asAPS(),
+			},
+		}
 	}
 
 	batchResponse, err := client.SendEachForMulticast(context.Background(), message)
@@ -277,6 +284,19 @@ func (this *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResp
 	fcmRespStatus := toFcmRespStatus(batchResponse)
 
 	return fcmRespStatus, nil
+}
+
+func (n *NotificationPayload) asAPS() *messaging.Aps {
+	badge, err := strconv.Atoi(n.Badge)
+	if err != nil {
+		return &messaging.Aps{
+			Sound: n.Sound,
+		}
+	}
+	return &messaging.Aps{
+		Badge: &badge,
+		Sound: n.Sound,
+	}
 }
 
 // parseStatusBody parse FCM response body
