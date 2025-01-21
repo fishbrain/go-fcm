@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 	"strconv"
+	"time"
 
 	messaging "firebase.google.com/go/v4/messaging"
 	"github.com/fishbrain/go-fcm/utils"
@@ -251,28 +251,35 @@ func (this *FcmClient) Send() (*FcmResponseStatus, error) {
 	return this.sendOnceFirebaseAdminGo(client)
 }
 
-func (this *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResponseStatus, error) {
-	multicastMessage, ok := this.Message.makeMulticastMessageData()
+func (fcmClient *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*FcmResponseStatus, error) {
+	multicastMessage, ok := fcmClient.Message.makeMulticastMessageData()
 	if !ok {
-		return nil, errors.New("could not build multicast message for Firebase Admin Go library")
+		return nil, errors.New("error building multicast message for Firebase Admin Go library")
 	}
 
 	message := &messaging.MulticastMessage{
 		Data:   *multicastMessage,
-		Tokens: this.Message.RegistrationIds,
+		Tokens: fcmClient.Message.RegistrationIds,
 	}
 	
-	if this.Message.Notification != nil {
+	if fcmClient.Message.Notification != nil {
 		message.Notification = &messaging.Notification{
-			Title: this.Message.Notification.Title,
-			Body:  this.Message.Notification.Body,
+			Title: fcmClient.Message.Notification.Title,
+			Body:  fcmClient.Message.Notification.Body,
 		}
 
 		message.APNS = &messaging.APNSConfig{
 			Payload: &messaging.APNSPayload{
-				Aps: this.Message.Notification.asAPS(),
+				Aps: fcmClient.Message.Notification.asAPS(),
 			},
-		}
+		} 
+
+		imageUrlField := fcmClient.Message.Notification.Image
+		if imageUrlField != "" {
+			logging.Log.Infof("Adding image URL to multicast message: %s", imageUrlField)
+			message = addImageURLToMulticastMessage(message, imageUrlField)
+				logging.Log.Infof("Multicast message after adding image URL: %v", message)
+			}
 	}
 
 	batchResponse, err := client.SendEachForMulticast(context.Background(), message)

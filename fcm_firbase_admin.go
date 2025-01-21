@@ -84,6 +84,13 @@ func (this *FcmMsg) makeMulticastMessageData() (*map[string]string, bool) {
 	return &dataMap, true
 }
 
+func addImageURLToMulticastMessage(multicastMessage *messaging.MulticastMessage, imageURL string) (*messaging.MulticastMessage) {	
+	multicastMessage.APNS.FCMOptions.ImageURL = imageURL
+	multicastMessage.APNS.Payload.Aps.MutableContent = true
+	multicastMessage.Android.Notification.ImageURL = imageURL
+	return multicastMessage
+}
+
 func toFcmRespStatus(resp *messaging.BatchResponse) *FcmResponseStatus {
 	var ok bool
 	var statusCode int = http.StatusInternalServerError
