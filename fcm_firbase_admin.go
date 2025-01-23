@@ -85,9 +85,19 @@ func (this *FcmMsg) makeMulticastMessageData() (*map[string]string, bool) {
 }
 
 func addImageURLToMulticastMessage(multicastMessage *messaging.MulticastMessage, imageURL string) (*messaging.MulticastMessage) {	
-	multicastMessage.APNS.FCMOptions.ImageURL = imageURL
-	multicastMessage.APNS.Payload.Aps.MutableContent = true
-	multicastMessage.Android.Notification.ImageURL = imageURL
+	multicastMessage.APNS.FCMOptions = &messaging.APNSFCMOptions{
+		ImageURL: imageURL,
+	}
+	multicastMessage.APNS.Payload = &messaging.APNSPayload{
+		Aps: &messaging.Aps{
+			MutableContent: true,
+		},
+	}
+	multicastMessage.Android = &messaging.AndroidConfig{
+		Notification: &messaging.AndroidNotification{
+			ImageURL: imageURL,
+		},
+	}
 	return multicastMessage
 }
 
