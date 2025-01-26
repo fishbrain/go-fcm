@@ -264,6 +264,7 @@ func TestSendOnceFirebaseAdminGo_SuccessResponse(t *testing.T) {
 		Title: "title - foo",
 		Body:  "body - bar",
 		Image: "https://example.com/img.jpg",
+		Sound: "push_1.caf",
 	}
 	c.SetNotificationPayload(&notificationPayload)
 
