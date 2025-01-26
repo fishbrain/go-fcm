@@ -298,11 +298,19 @@ func (n *NotificationPayload) asAPS() *messaging.Aps {
 	if err != nil {
 		return &messaging.Aps{
 			Sound: n.Sound,
+			Alert: &messaging.ApsAlert{
+				Body: n.Body,
+				Title: n.Title,
+			},
 		}
 	}
 	return &messaging.Aps{
 		Badge: &badge,
 		Sound: n.Sound,
+		Alert: &messaging.ApsAlert{
+			Body: n.Body,
+			Title: n.Title,
+		},
 	}
 }
 
