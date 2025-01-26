@@ -88,11 +88,7 @@ func addImageURLToMulticastMessage(multicastMessage *messaging.MulticastMessage,
 	multicastMessage.APNS.FCMOptions = &messaging.APNSFCMOptions{
 		ImageURL: imageURL,
 	}
-	multicastMessage.APNS.Payload = &messaging.APNSPayload{
-		Aps: &messaging.Aps{
-			MutableContent: true,
-		},
-	}
+	multicastMessage.APNS.Payload.Aps.MutableContent = true
 	multicastMessage.Android = &messaging.AndroidConfig{
 		Notification: &messaging.AndroidNotification{
 			ImageURL: imageURL,
