@@ -276,9 +276,7 @@ func (fcmClient *FcmClient) sendOnceFirebaseAdminGo(client MessagingClient) (*Fc
 
 		imageUrlField := fcmClient.Message.Notification.Image
 		if imageUrlField != "" {
-			logging.Log.Infof("Adding image URL to multicast message: %s", imageUrlField)
 			message = addImageURLToMulticastMessage(message, imageUrlField)
-				logging.Log.Infof("Multicast message after adding image URL: %v", message)
 			}
 	}
 
