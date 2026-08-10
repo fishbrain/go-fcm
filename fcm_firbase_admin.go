@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"firebase.google.com/go/v4/errorutils"
 	messaging "firebase.google.com/go/v4/messaging"
 )
 
@@ -136,10 +137,72 @@ func toFcmResponseResults(original *[]*messaging.SendResponse) *[]map[string]str
 		optErr := resp.Error
 		if optErr != nil {
 			elem["error"] = optErr.Error()
+
+			if code := fcmErrorCode(optErr); code != "" {
+				elem["errorCode"] = code
+			}
+
+			if status := httpStatus(optErr); status != "" {
+				elem["httpStatus"] = status
+			}
 		}
 
 		result = append(result, elem)
 	}
 
 	return &result
+}
+
+// fcmErrorCode maps a send error to the stable FCM v1 error code that FCM
+// returns in the FcmError details of its error response.
+//
+// The "error" entry above carries the error message instead, which is free-form
+// text chosen by the server - it has no stable contract and callers must not
+// classify errors by matching on it.
+//
+// Returns an empty string when the error carries no FCM error code, for example
+// a transport failure or a response without FcmError details. Callers should
+// fall back to the message in that case.
+//
+// err must be the error exactly as the SDK produced it. The predicates below
+// type-assert on the SDK's concrete error type rather than using errors.As, so
+// wrapping err anywhere on its way here turns every code into an empty string
+// with no compile error and no test failure.
+func fcmErrorCode(err error) string {
+	// These are mutually exclusive - each predicate compares against a single
+	// error code, so the order of the cases does not matter.
+	switch {
+	case messaging.IsUnregistered(err):
+		return "UNREGISTERED"
+	case messaging.IsSenderIDMismatch(err):
+		return "SENDER_ID_MISMATCH"
+	case messaging.IsQuotaExceeded(err):
+		return "QUOTA_EXCEEDED"
+	case messaging.IsUnavailable(err):
+		return "UNAVAILABLE"
+	case messaging.IsInternal(err):
+		return "INTERNAL"
+	case messaging.IsInvalidArgument(err):
+		return "INVALID_ARGUMENT"
+	case messaging.IsThirdPartyAuthError(err):
+		// Covers both THIRD_PARTY_AUTH_ERROR and the older APNS_AUTH_ERROR,
+		// which the SDK treats as the same condition.
+		return "THIRD_PARTY_AUTH_ERROR"
+	}
+
+	return ""
+}
+
+// httpStatus returns the status code of the response that produced err, or an
+// empty string if err did not come from an HTTP response. It gives callers a
+// coarse signal when no FCM error code is available.
+//
+// As with fcmErrorCode, err must not be wrapped - errorutils.HTTPResponse also
+// type-asserts on the SDK's concrete error type.
+func httpStatus(err error) string {
+	if resp := errorutils.HTTPResponse(err); resp != nil {
+		return strconv.Itoa(resp.StatusCode)
+	}
+
+	return ""
 }
